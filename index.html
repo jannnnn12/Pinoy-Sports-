@@ -2,199 +2,365 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sepak Takraw Kick Trainer</title>
+  <title>Race to the Finish!</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    body {
-      background: linear-gradient(to bottom, #83c5be 0%, #edf6f9 100%);
+    html, body {
       margin: 0; padding: 0;
-      width: 100vw; height: 100vh;
-      overflow: hidden;
+      height: 100%; width: 100%;
+      background: linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%);
       font-family: 'Segoe UI', Arial, sans-serif;
       user-select: none;
+      overflow: hidden;
     }
-    #game-area {
+    #game-container {
       position: relative;
       width: 100vw; height: 100vh;
       overflow: hidden;
     }
-    #ball {
+    #track {
       position: absolute;
-      width: 60px; height: 60px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #f2c572 60%, #c98c29 100%);
-      border: 4px solid #c98c29;
-      left: 50vw; top: 10vh;
-      box-shadow: 0 4px 16px #8884;
-      cursor: pointer;
-      display: none;
-      transition: box-shadow 0.1s;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 38vh;
+      background: repeating-linear-gradient(
+        to bottom,
+        #e9c46a,
+        #e9c46a 20px,
+        #f4a261 21px,
+        #f4a261 40px
+      );
+      border-top: 6px solid #264653;
+      z-index: 1;
     }
-    #scoreboard, #gameover, #start-btn {
+    #finish-line {
       position: absolute;
-      left: 50%; transform: translateX(-50%);
-      text-align: center;
-      z-index: 10;
+      right: 4vw; bottom: 0;
+      width: 18px; height: 38vh;
+      background:
+        repeating-linear-gradient(
+          to bottom,
+          #fff,
+          #fff 10px,
+          #e63946 10px,
+          #e63946 20px
+        );
+      border-left: 6px solid #222;
+      z-index: 3;
+      box-shadow: -2px 0 8px #2222;
     }
-    #scoreboard {
-      top: 20px;
-      font-size: 2em;
-      color: #222;
-      background: #fff8;
-      padding: 10px 30px;
-      border-radius: 20px;
-      box-shadow: 0 2px 8px #8882;
+    #runner {
+      position: absolute;
+      left: 4vw;
+      bottom: calc(38vh - 58px); /* sits on track */
+      width: 54px; height: 58px;
+      z-index: 4;
+      transition: left 0.08s;
+      background: none;
     }
-    #gameover {
-      top: 40%;
-      font-size: 2.3em;
-      color: #2d6a4f;
-      background: #fffdfc;
-      padding: 30px 40px 20px 40px;
-      border-radius: 18px;
-      box-shadow: 0 6px 18px #3333;
-      display: none;
-    }
-    #start-btn {
-      top: 55%;
-      font-size: 1.3em;
-      background: #38b000;
-      color: #fff;
-      padding: 16px 42px;
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background 0.2s;
-      box-shadow: 0 4px 12px #2223;
+    /* stylized runner (SVG) */
+    #runner svg {
+      width: 54px; height: 58px;
       display: block;
     }
-    #start-btn:hover {
-      background: #40916c;
+    #run-btn {
+      position: absolute;
+      left: 50%; bottom: 7vh;
+      transform: translateX(-50%);
+      font-size: 1.6em;
+      background: #38b000;
+      color: #fff;
+      padding: 18px 58px;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 7px 22px #2224;
+      cursor: pointer;
+      transition: background 0.18s, transform 0.12s;
+      z-index: 10;
+      font-family: inherit;
+      font-weight: bold;
+      letter-spacing: 1.5px;
+      outline: none;
     }
-    @media (max-width: 600px) {
-      #ball { width: 44px; height: 44px; }
-      #scoreboard { font-size: 1.3em; padding: 8px 16px; }
-      #gameover { font-size: 1.3em; padding: 16px 8px; }
-      #start-btn { font-size: 1em; padding: 10px 18px; }
+    #run-btn:active {
+      background: #40916c;
+      transform: translateX(-50%) scale(0.97);
+    }
+    #info {
+      position: absolute;
+      top: 24px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: #fff9;
+      border-radius: 12px;
+      padding: 10px 30px;
+      font-size: 1.4em;
+      color: #222;
+      text-shadow: 0 1px 1px #fff8;
+      box-shadow: 0 2px 8px #2222;
+    }
+    #timer {
+      font-size: 1.1em;
+      color: #264653;
+      margin-top: 4px;
+      font-weight: bold;
+    }
+    #gameover {
+      position: absolute;
+      top: 28%; left: 50%;
+      transform: translateX(-50%);
+      background: #fff;
+      color: #264653;
+      font-size: 2.1em;
+      border-radius: 18px;
+      padding: 32px 54px 18px 54px;
+      box-shadow: 0 7px 28px #26465366;
+      z-index: 20;
+      text-align: center;
+      display: none;
+      animation: popin 0.4s;
+    }
+    @keyframes popin {
+      from { transform: translateX(-50%) scale(0.7); opacity: 0;}
+      to   { transform: translateX(-50%) scale(1); opacity: 1;}
+    }
+    #gameover button {
+      font-size: 1.1em;
+      margin-top: 15px;
+      padding: 12px 36px;
+      background: #0096c7;
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 8px #2223;
+      transition: background 0.2s;
+    }
+    #gameover button:hover {
+      background: #00b4d8;
+    }
+    #credit {
+      position: absolute;
+      bottom: 8px; right: 18px;
+      color: #fff9;
+      font-size: 1em;
+      z-index: 100;
+      pointer-events: none;
+    }
+    @media (max-width: 700px) {
+      #info { font-size: 1em; padding: 8px 10px;}
+      #gameover { font-size: 1.15em; padding: 18px 10px 10px 10px;}
+      #run-btn { font-size: 1em; padding: 10px 18px;}
+      #credit { font-size: 0.87em;}
+      #runner { width: 36px; height: 40px;}
+      #runner svg { width: 36px; height: 40px;}
     }
   </style>
 </head>
 <body>
-  <div id="game-area">
-    <div id="scoreboard">Score: 0</div>
-    <div id="ball"></div>
-    <div id="gameover">
-      <div id="final-score"></div>
-      <button id="start-btn">Start Game</button>
+  <div id="game-container">
+    <div id="info">
+      <b>Race to the Finish!</b><br>
+      Tap <span style="color:#38b000">Run!</span> or press <kbd>SPACEBAR</kbd> to go faster.<br>
+      <span id="timer">Time: 0.00 sec</span>
     </div>
+    <div id="track"></div>
+    <div id="finish-line"></div>
+    <div id="runner">
+      <!-- SVG animated runner -->
+      <svg id="runner-svg" viewBox="0 0 54 58">
+        <g id="body-group">
+          <ellipse cx="28" cy="14" rx="12" ry="11" fill="#ffe066" stroke="#f9c74f" stroke-width="2"/>
+          <!-- body -->
+          <rect x="18" y="25" width="20" height="19" rx="10" fill="#219ebc" stroke="#023e8a" stroke-width="2"/>
+          <!-- left leg -->
+          <rect id="leg-left" x="21" y="43" width="7" height="15" rx="4" fill="#ffb703"/>
+          <!-- right leg -->
+          <rect id="leg-right" x="30" y="43" width="7" height="15" rx="4" fill="#ffb703"/>
+          <!-- left arm -->
+          <rect id="arm-left" x="7" y="26" width="10" height="6" rx="3" fill="#f94144"/>
+          <!-- right arm -->
+          <rect id="arm-right" x="37" y="26" width="10" height="6" rx="3" fill="#f94144"/>
+        </g>
+      </svg>
+    </div>
+    <button id="run-btn">Run!</button>
+    <div id="gameover">
+      <div id="final-msg"></div>
+      <button id="restart-btn">Play Again</button>
+    </div>
+    <div id="credit">by Pinoy Games JS</div>
   </div>
   <script>
-    // DOM elements
-    const ball = document.getElementById('ball');
-    const scoreBoard = document.getElementById('scoreboard');
-    const gameover = document.getElementById('gameover');
-    const finalScore = document.getElementById('final-score');
-    const startBtn = document.getElementById('start-btn');
+    // Game elements
+    const runnerDiv = document.getElementById('runner');
+    const runBtn = document.getElementById('run-btn');
+    const info = document.getElementById('info');
+    const timerSpan = document.getElementById('timer');
+    const finishLine = document.getElementById('finish-line');
+    const gameoverDiv = document.getElementById('gameover');
+    const finalMsg = document.getElementById('final-msg');
+    const restartBtn = document.getElementById('restart-btn');
+    const legLeft = document.getElementById('leg-left');
+    const legRight = document.getElementById('leg-right');
+    const armLeft = document.getElementById('arm-left');
+    const armRight = document.getElementById('arm-right');
 
-    // Game variables
-    let score = 0;
-    let speed = 2.5;      // starting pixel speed per frame
-    let maxSpeed = 15;    // limit max speed
-    let dy = 0;
-    let ballX = 0, ballY = 0;
-    let ballRadius = 30;
-    let animationId = null;
-    let playing = false;
+    // Game state
+    let runnerPos = 0; // px
+    let runnerSpeed = 0; // px/frame
+    let maxTrack;
+    let running = false;
+    let gameStartTime = 0;
+    let timerInt = null;
+    let animFrameId = null;
+    let lastLegSwap = 0;
+    let legState = 0; // 0 or 1 (for animation)
+    let bestTime = null;
 
-    // Utility: random X within game area
-    function randomX() {
-      const min = ballRadius + 10;
-      const max = window.innerWidth - ballRadius - 10;
-      return Math.floor(Math.random() * (max - min) + min);
+    function resetGame() {
+      // Track goes from 4vw (start) to finishLine-54px
+      runnerPos = 0;
+      runnerSpeed = 0;
+      lastLegSwap = 0;
+      legState = 0;
+      gameStartTime = 0;
+      running = false;
+      // Set maxTrack based on finish line position minus runner width
+      const finishX = finishLine.getBoundingClientRect().left;
+      const startX = runnerDiv.parentElement.getBoundingClientRect().left;
+      maxTrack = finishX - startX - runnerDiv.offsetWidth - 10;
+      // Reset runner position
+      runnerDiv.style.left = '4vw';
+      document.body.style.background = "linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%)";
+      timerSpan.textContent = "Time: 0.00 sec";
+      gameoverDiv.style.display = "none";
+      runBtn.disabled = false;
     }
 
-    // Start or restart game
     function startGame() {
-      score = 0;
-      speed = 2.5;
-      dy = speed;
-      ballRadius = (window.innerWidth < 600) ? 22 : 30;
-      ball.style.width = ball.style.height = (ballRadius * 2) + 'px';
-      // Place ball at random top position
-      ballX = randomX();
-      ballY = 10;
-      updateBallPosition();
-      scoreBoard.textContent = "Score: 0";
-      gameover.style.display = 'none';
-      ball.style.display = 'block';
-      playing = true;
-      animate();
+      resetGame();
+      running = true;
+      runBtn.textContent = "Run!";
+      runBtn.style.background = "#38b000";
+      gameStartTime = performance.now();
+      timerInt = setInterval(updateTimer, 30);
+      animFrameId = requestAnimationFrame(gameLoop);
     }
 
-    // Main animation/game loop
-    function animate() {
-      if (!playing) return;
-      ballY += dy;
-      dy += 0.07 + (speed * 0.015); // gravity, scales slightly with speed
+    function updateTimer() {
+      if (!running) return;
+      const t = ((performance.now() - gameStartTime) / 1000).toFixed(2);
+      timerSpan.textContent = "Time: " + t + " sec";
+    }
 
-      // Check if hit the ground
-      if (ballY + ballRadius*2 >= window.innerHeight - 12) {
-        endGame();
+    function animateRunnerLegs() {
+      // Alternate legs and arms for running effect
+      if (legState === 0) {
+        legLeft.setAttribute("y", 43);
+        legRight.setAttribute("y", 48);
+        armLeft.setAttribute("x", 7);
+        armRight.setAttribute("x", 37);
+        legState = 1;
+      } else {
+        legLeft.setAttribute("y", 48);
+        legRight.setAttribute("y", 43);
+        armLeft.setAttribute("x", 4);
+        armRight.setAttribute("x", 40);
+        legState = 0;
+      }
+    }
+
+    function gameLoop() {
+      if (!running) return;
+      // Friction slows down the speed
+      runnerSpeed *= 0.96;
+      // Clamp minimal speed
+      if (runnerSpeed < 0.2) runnerSpeed = 0;
+      runnerPos += runnerSpeed;
+      // Animate runner
+      if (performance.now() - lastLegSwap > 70 + Math.max(0, 100-runnerSpeed*8)) {
+        animateRunnerLegs();
+        lastLegSwap = performance.now();
+      }
+      // Move runner
+      let leftPx = Math.min(runnerPos, maxTrack);
+      runnerDiv.style.left = `calc(4vw + ${leftPx}px)`;
+      // Check for finish
+      if (runnerPos >= maxTrack) {
+        finishRace();
         return;
       }
-      updateBallPosition();
-      animationId = requestAnimationFrame(animate);
+      animFrameId = requestAnimationFrame(gameLoop);
     }
 
-    // On kick (click/tap) the ball
-    function kickBall() {
-      if (!playing) return;
-      // Ball bounces up; bounce power increases slightly as speed increases
-      dy = - (10 + speed * 0.7 + Math.random() * 2);
-      // Move to random X position
-      ballX = randomX();
-      // Increase speed (difficulty)
-      speed = Math.min(speed + 0.6, maxSpeed);
-      score++;
-      scoreBoard.textContent = "Score: " + score;
-      // Small visual feedback
-      ball.style.boxShadow = "0 6px 24px #e76f51cc";
-      setTimeout(() => { ball.style.boxShadow = "0 4px 16px #8884"; }, 100);
+    function runAction() {
+      if (!running) return;
+      // Play "run" effect: speed up, short shake
+      runnerSpeed += 3.2 + Math.random()*1.2;
+      if (runnerSpeed > 18) runnerSpeed = 18;
+      runnerDiv.style.transform = "scale(1.04,0.98)";
+      setTimeout(()=>{ runnerDiv.style.transform = ""; }, 80);
     }
 
-    // End the game
-    function endGame() {
-      playing = false;
-      cancelAnimationFrame(animationId);
-      ball.style.display = 'none';
-      finalScore.innerHTML = `<b>Game Over!</b><br>Your Score: <span style="color:#e76f51">${score}</span>`;
-      gameover.style.display = 'block';
+    function finishRace() {
+      running = false;
+      clearInterval(timerInt);
+      cancelAnimationFrame(animFrameId);
+      runBtn.disabled = true;
+      runBtn.textContent = "Finish!";
+      runBtn.style.background = "#adb5bd";
+      // Blink background
+      document.body.style.background = "repeating-linear-gradient(135deg, #fff 0 20px, #06d6a0 20px 40px, #fff 40px 60px, #118ab2 60px 80px)";
+      // Show final time
+      const timeTaken = ((performance.now() - gameStartTime) / 1000).toFixed(2);
+      let best = bestTime;
+      let msg = `<b>🏁 Finished!<br></b>Your time: <span style="color:#e63946">${timeTaken} sec</span>`;
+      if (!best || timeTaken < best) {
+        bestTime = timeTaken;
+        msg += `<br><br><b>🎉 NEW BEST!</b>`;
+      } else {
+        msg += `<br><br>Best: <span style="color:#457b9d">${best} sec</span>`;
+      }
+      finalMsg.innerHTML = msg;
+      gameoverDiv.style.display = "block";
     }
 
-    function updateBallPosition() {
-      ball.style.left = (ballX - ballRadius) + "px";
-      ball.style.top = (ballY) + "px";
-    }
+    // Button/click/tap/keyboard listeners
+    runBtn.addEventListener('click', function() {
+      if (!running) { startGame(); return; }
+      runAction();
+    });
+    restartBtn.addEventListener('click', startGame);
 
-    // Event listeners
-    ball.addEventListener('click', kickBall);
-    ball.addEventListener('touchstart', function(e){ e.preventDefault(); kickBall(); });
-
-    startBtn.addEventListener('click', startGame);
-
-    // Responsive: reposition ball on resize
-    window.addEventListener('resize', function() {
-      if (!playing) return;
-      ballX = Math.min(ballX, window.innerWidth - ballRadius - 10);
-      updateBallPosition();
+    // Spacebar runs!
+    window.addEventListener('keydown', function(e) {
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!running) { startGame(); }
+        else runAction();
+      }
     });
 
-    // Show start screen on load
+    // Mobile: tap anywhere to run
+    window.addEventListener('touchstart', function(e) {
+      if (e.target === runBtn || e.target === restartBtn) return;
+      if (!running) { startGame(); }
+      else runAction();
+    }, {passive:false});
+
+    // Responsive
+    window.addEventListener('resize', resetGame);
+
+    // Initial screen
     window.onload = function() {
-      gameover.style.display = 'block';
-      ball.style.display = 'none';
-      finalScore.innerHTML = `<b>Sepak Takraw Kick Trainer</b><br>How many kicks can you do?<br><br>
-        <span style="font-size:0.8em;color:#888">Tap or click the ball before it hits the ground!</span>`;
-      startBtn.textContent = "Start Game";
+      resetGame();
+      runBtn.textContent = "Start!";
+      info.innerHTML = `<b>Race to the Finish!</b><br>
+        Tap <span style="color:#38b000">Run!</span> or press <kbd>SPACEBAR</kbd> to go faster.<br>
+        <span id="timer">Time: 0.00 sec</span>`;
+      timerSpan.textContent = "Time: 0.00 sec";
     };
   </script>
 </body>
