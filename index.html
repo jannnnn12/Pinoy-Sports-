@@ -5,14 +5,7 @@
   <title>Race to the Finish - Multiplayer</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
-    html, body {
-      margin: 0; padding: 0;
-      height: 100%; width: 100%;
-      background: linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%);
-      font-family: 'Segoe UI', Arial, sans-serif;
-      user-select: none;
-      overflow: hidden;
-    }
+    html, body {margin: 0; padding: 0; height: 100%; width: 100%; background: linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%); font-family: 'Segoe UI', Arial, sans-serif; user-select: none; overflow: hidden;}
     #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
     #track-area { position: absolute; left: 0; bottom: 0; width: 100vw; height: 54vh; }
     .track {
@@ -45,7 +38,6 @@
     .runner.p1 { z-index: 5; }
     .runner.p2 { z-index: 6; }
     .runner.p3 { z-index: 7; }
-
     #ui-panel {
       position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
       background: #fff9;
@@ -59,9 +51,7 @@
       text-align: center;
       min-width: 220px;
     }
-    #choose-players {
-      margin-top: 8px;
-    }
+    #choose-players { margin-top: 8px; }
     .player-btn {
       font-size: 1.15em;
       background: #48cae4;
@@ -91,7 +81,6 @@
       outline: none;
     }
     #start-btn:active { background: #40916c; }
-
     .p-controls {
       margin: 12px 0 0 0;
       font-size: 0.90em;
@@ -101,7 +90,6 @@
     }
     .p-controls .p-label { font-weight: bold; margin-right: 5px; }
     .p-controls .kbd { font-family: monospace; background: #eee; border-radius: 4px; padding: 2px 7px; }
-    
     .run-controls {
       position: absolute; left: 50%;
       transform: translateX(-50%);
@@ -131,7 +119,6 @@
     .run-btn.p3 { background: #f72585; color: #fff;}
     .run-btn:active { transform: scale(0.97); }
     .run-btn:disabled { background: #bdbdbd; color: #555; cursor: not-allowed;}
-
     #timer, #best-timer {
       color: #264653;
       font-size: 1.1em;
@@ -169,6 +156,26 @@
       from { transform: translateX(-50%) scale(0.7); opacity: 0;}
       to   { transform: translateX(-50%) scale(1); opacity: 1;}
     }
+    #countdown {
+      position: absolute;
+      left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 1000;
+      font-size: 7vw;
+      color: #fff;
+      font-weight: bold;
+      text-shadow: 2px 2px 18px #000a, 0 0 80px #4361ee;
+      background: rgba(0,0,0,0.16);
+      padding: 10px 55px;
+      border-radius: 1em;
+      display: none;
+      pointer-events: none;
+      animation: countdownPop 0.4s;
+    }
+    @keyframes countdownPop {
+      from { transform: translate(-50%, -50%) scale(0.8); opacity: 0;}
+      to   { transform: translate(-50%, -50%) scale(1); opacity: 1;}
+    }
     #credit {
       position: absolute;
       bottom: 8px; right: 18px;
@@ -184,6 +191,7 @@
       .run-controls { gap: 1vw;}
       #credit { font-size: 0.85em;}
       .runner, .runner svg { width: 35px; height: 38px;}
+      #countdown { font-size: 12vw; padding: 8px 16vw;}
     }
   </style>
 </head>
@@ -209,6 +217,7 @@
     <div id="track-area"></div>
     <div id="runner-area"></div>
     <div class="run-controls" id="run-controls" style="display:none"></div>
+    <div id="countdown"></div>
     <div id="winner-msg"></div>
     <div id="credit">by Pinoy Games JS</div>
   </div>
@@ -234,6 +243,7 @@
     const runnerArea = document.getElementById('runner-area');
     const runControls = document.getElementById('run-controls');
     const winnerMsg = document.getElementById('winner-msg');
+    const countdownDiv = document.getElementById('countdown');
 
     // --- GAME STATE ---
     let numPlayers = 1;
@@ -245,6 +255,7 @@
     let animationId = null;
     let startTime = 0;
     let singleBestTime = null;
+    let countdownActive = false;
 
     // --- SETUP UI ---
     playerBtns.forEach(btn => {
@@ -331,7 +342,7 @@
         btn.textContent = `Run! (${runnerKeyLabels[i]})`;
         btn.disabled = false;
         btn.onclick = () => {
-          if (gameOn) runAction(i);
+          if (gameOn && !countdownActive) runAction(i);
         };
         runControls.appendChild(btn);
       }
@@ -396,7 +407,7 @@
 
     // --- RUN ACTIONS ---
     function runAction(idx) {
-      if (!gameOn) return;
+      if (!gameOn || countdownActive) return;
       let r = runners[idx];
       r.speed += 3.1 + Math.random() * 1.3;
       if (r.speed > 15) r.speed = 15;
@@ -404,17 +415,16 @@
       setTimeout(() => { r.el.style.transform = ""; }, 70);
     }
 
-    // --- START GAME ---
-    function startGame() {
+    // --- START GAME WITH COUNTDOWN ---
+    function startGameWithCountdown() {
       setupTracksAndRunners();
       setupRunButtons();
-      setRunButtonsDisabled(false);
+      setRunButtonsDisabled(true);
       document.body.style.background = "linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%)";
       winnerMsg.style.display = "none";
       winner = null;
       for (let r of runners) { r.pos = 0; r.speed = 0; r.legState = 0; r.lastLegSwap = 0;}
-      gameOn = true;
-      startTime = performance.now();
+      gameOn = false;
       timerDiv.style.display = '';
       timerDiv.textContent = "Time: 0.00 sec";
       if (numPlayers === 1 && singleBestTime) {
@@ -423,10 +433,39 @@
       } else {
         bestDiv.style.display = 'none';
       }
-      animationId = requestAnimationFrame(updateTimer);
-      animationId = requestAnimationFrame(gameLoop);
+      runControls.style.pointerEvents = "none";
       uiPanel.style.pointerEvents = "none";
-      runControls.style.pointerEvents = "";
+      countdownActive = true;
+      doCountdown(3, () => {
+        gameOn = true;
+        countdownActive = false;
+        setRunButtonsDisabled(false);
+        runControls.style.pointerEvents = "";
+        uiPanel.style.pointerEvents = "none";
+        startTime = performance.now();
+        animationId = requestAnimationFrame(updateTimer);
+        animationId = requestAnimationFrame(gameLoop);
+      });
+    }
+
+    // --- COUNTDOWN ---
+    function doCountdown(num, callback) {
+      countdownDiv.style.display = '';
+      function show(n) {
+        if(n > 0){
+          countdownDiv.textContent = n;
+          countdownDiv.style.animation = "countdownPop 0.4s";
+          setTimeout(()=>show(n-1), 900);
+        } else {
+          countdownDiv.textContent = "GO!";
+          countdownDiv.style.animation = "countdownPop 0.4s";
+          setTimeout(()=>{
+            countdownDiv.style.display = 'none';
+            callback();
+          }, 700);
+        }
+      }
+      show(num);
     }
 
     // --- TIMER ---
@@ -457,21 +496,25 @@
       } else {
         msg = `<b>🏅 Winner: <span style="color:${runnerColors[winner].body}">${runnerNames[winner]}</span>!</b>`;
       }
-      msg += `<br><button onclick="window._restartRace()">Play Again</button>`;
+      msg += `<br><button id="restart-btn">Restart Game</button>`;
       winnerMsg.innerHTML = msg;
       winnerMsg.style.display = "";
+      setTimeout(() => {
+        const restartBtn = document.getElementById('restart-btn');
+        if (restartBtn) restartBtn.onclick = restartGame;
+      }, 10);
     }
-    // For inline button
-    window._restartRace = function() {
+
+    function restartGame() {
       winnerMsg.style.display = "none";
       uiPanel.style.pointerEvents = "";
       runControls.style.pointerEvents = "";
-      startGame();
-    };
+      startGameWithCountdown();
+    }
 
     // --- KEYBOARD CONTROLS ---
     window.addEventListener('keydown', function(e) {
-      if (!gameOn) return;
+      if (!gameOn || countdownActive) return;
       for (let i = 0; i < numPlayers; ++i) {
         if (e.code === runnerKeys[i]) {
           e.preventDefault();
@@ -482,7 +525,7 @@
 
     // --- TOUCH: Tap or multi-tap on run buttons
     runControls.addEventListener('touchstart', function(e) {
-      if (!gameOn) return;
+      if (!gameOn || countdownActive) return;
       let idx = Array.from(runControls.children).indexOf(e.target);
       if (idx >= 0 && idx < numPlayers) {
         runAction(idx);
@@ -495,7 +538,7 @@
       runControls.style.pointerEvents = "";
       timerDiv.style.display = 'none';
       bestDiv.style.display = 'none';
-      startGame();
+      startGameWithCountdown();
     };
 
     // --- INITIALIZE ---
