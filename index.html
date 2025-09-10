@@ -1,559 +1,522 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Race to the Finish - Multiplayer</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <style>
-    html, body {margin: 0; padding: 0; height: 100%; width: 100%; background: linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%); font-family: 'Segoe UI', Arial, sans-serif; user-select: none; overflow: hidden;}
-    #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-    #track-area { position: absolute; left: 0; bottom: 0; width: 100vw; height: 54vh; }
-    .track {
-      position: absolute; left: 0;
-      width: 100vw; height: 16vh;
-      background: repeating-linear-gradient(
-        to bottom, #e9c46a, #e9c46a 18px, #f4a261 19px, #f4a261 34px
-      );
-      border-top: 6px solid #264653;
-      z-index: 1;
-    }
-    .finish-line {
-      position: absolute; right: 4vw; width: 18px; height: 100%;
-      background: repeating-linear-gradient(
-        to bottom, #fff, #fff 10px, #e63946 10px, #e63946 20px
-      );
-      border-left: 6px solid #222;
-      z-index: 3;
-      box-shadow: -2px 0 8px #2222;
-    }
-    .runner {
-      position: absolute;
-      width: 54px; height: 58px;
-      z-index: 4;
-      bottom: 6px;
-      transition: left 0.08s;
-      background: none;
-    }
-    .runner svg { width: 54px; height: 58px; display: block; }
-    .runner.p1 { z-index: 5; }
-    .runner.p2 { z-index: 6; }
-    .runner.p3 { z-index: 7; }
-    #ui-panel {
-      position: absolute; top: 20px; left: 50%; transform: translateX(-50%);
-      background: #fff9;
-      border-radius: 14px;
-      padding: 12px 30px 22px 30px;
-      font-size: 1.4em;
-      color: #222;
-      text-shadow: 0 1px 1px #fff8;
-      box-shadow: 0 2px 8px #2222;
-      z-index: 10;
-      text-align: center;
-      min-width: 220px;
-    }
-    #choose-players { margin-top: 8px; }
-    .player-btn {
-      font-size: 1.15em;
-      background: #48cae4;
-      color: #fff;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 20px;
-      margin: 0 8px;
-      cursor: pointer;
-      transition: background 0.14s;
-      font-family: inherit;
-    }
-    .player-btn.selected, .player-btn:active { background: #023e8a; color: #fff; }
-    #start-btn {
-      margin-top: 16px;
-      font-size: 1.3em;
-      background: #38b000;
-      color: #fff;
-      padding: 12px 36px;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.18s, transform 0.12s;
-      box-shadow: 0 4px 12px #2223;
-      font-family: inherit;
-      letter-spacing: 1.5px;
-      outline: none;
-    }
-    #start-btn:active { background: #40916c; }
-    .p-controls {
-      margin: 12px 0 0 0;
-      font-size: 0.90em;
-      display: flex;
-      justify-content: center;
-      gap: 2em;
-    }
-    .p-controls .p-label { font-weight: bold; margin-right: 5px; }
-    .p-controls .kbd { font-family: monospace; background: #eee; border-radius: 4px; padding: 2px 7px; }
-    .run-controls {
-      position: absolute; left: 50%;
-      transform: translateX(-50%);
-      bottom: 9vh;
-      display: flex;
-      gap: 2vw;
-      z-index: 15;
-      justify-content: center;
-      width: 90vw;
-      max-width: 700px;
-    }
-    .run-btn {
-      font-size: 1.28em;
-      font-family: inherit;
-      font-weight: bold;
-      padding: 16px 30px;
-      border: none;
-      border-radius: 8px;
-      box-shadow: 0 4px 12px #2223;
-      cursor: pointer;
-      transition: background 0.19s, transform 0.11s;
-      min-width: 100px;
-      outline: none;
-    }
-    .run-btn.p1 { background: #4361ee; color: #fff;}
-    .run-btn.p2 { background: #ffbe0b; color: #333;}
-    .run-btn.p3 { background: #f72585; color: #fff;}
-    .run-btn:active { transform: scale(0.97); }
-    .run-btn:disabled { background: #bdbdbd; color: #555; cursor: not-allowed;}
-    #timer, #best-timer {
-      color: #264653;
-      font-size: 1.1em;
-      font-weight: bold;
-      margin-top: 6px;
-    }
-    #winner-msg {
-      position: absolute; top: 28%; left: 50%;
-      transform: translateX(-50%);
-      background: #fff;
-      color: #264653;
-      font-size: 2.1em;
-      border-radius: 18px;
-      padding: 32px 54px 18px 54px;
-      box-shadow: 0 7px 28px #26465366;
-      z-index: 30;
-      text-align: center;
-      display: none;
-      animation: popin 0.4s;
-    }
-    #winner-msg button {
-      font-size: 1.1em;
-      margin-top: 15px;
-      padding: 12px 36px;
-      background: #0096c7;
-      color: #fff;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      box-shadow: 0 2px 8px #2223;
-      transition: background 0.2s;
-    }
-    #winner-msg button:hover { background: #00b4d8; }
-    @keyframes popin {
-      from { transform: translateX(-50%) scale(0.7); opacity: 0;}
-      to   { transform: translateX(-50%) scale(1); opacity: 1;}
-    }
-    #countdown {
-      position: absolute;
-      left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      z-index: 1000;
-      font-size: 7vw;
-      color: #fff;
-      font-weight: bold;
-      text-shadow: 2px 2px 18px #000a, 0 0 80px #4361ee;
-      background: rgba(0,0,0,0.16);
-      padding: 10px 55px;
-      border-radius: 1em;
-      display: none;
-      pointer-events: none;
-      animation: countdownPop 0.4s;
-    }
-    @keyframes countdownPop {
-      from { transform: translate(-50%, -50%) scale(0.8); opacity: 0;}
-      to   { transform: translate(-50%, -50%) scale(1); opacity: 1;}
-    }
-    #credit {
-      position: absolute;
-      bottom: 8px; right: 18px;
-      color: #fff9;
-      font-size: 1em;
-      z-index: 100;
-      pointer-events: none;
-    }
-    @media (max-width: 700px) {
-      #ui-panel { font-size: 1em; padding: 8px 10px 12px 10px;}
-      #winner-msg { font-size: 1.1em; padding: 14px 8px 10px 8px;}
-      .run-btn { font-size: 0.95em; padding: 10px 10px;}
-      .run-controls { gap: 1vw;}
-      #credit { font-size: 0.85em;}
-      .runner, .runner svg { width: 35px; height: 38px;}
-      #countdown { font-size: 12vw; padding: 8px 16vw;}
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arnis Fighting Game</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #8B4513, #D2691E);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            font-family: 'Courier New', monospace;
+        }
+        
+        .game-container {
+            background: #2F4F4F;
+            border: 5px solid #8B4513;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+        }
+        
+        canvas {
+            background: linear-gradient(to bottom, #87CEEB 0%, #98FB98 50%, #8B4513 100%);
+            border: 3px solid #654321;
+            display: block;
+        }
+        
+        .hud {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .health-bar {
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .health-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff0000, #ffff00, #00ff00);
+            transition: width 0.3s ease;
+        }
+        
+        .controls {
+            color: white;
+            font-size: 12px;
+            margin-top: 10px;
+            text-align: center;
+        }
+        
+        .game-over {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            font-size: 24px;
+            display: none;
+        }
+        
+        button {
+            background: #8B4513;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background: #A0522D;
+        }
+    </style>
 </head>
 <body>
-  <div id="game-container">
-    <div id="ui-panel">
-      <div><b>Race to the Finish!</b></div>
-      <div style="font-size:0.85em;">Choose number of players:</div>
-      <div id="choose-players">
-        <button class="player-btn selected" data-n="1">1 Player</button>
-        <button class="player-btn" data-n="2">2 Players</button>
-        <button class="player-btn" data-n="3">3 Players</button>
-      </div>
-      <div class="p-controls">
-        <span><span class="p-label" style="color:#4361ee">P1</span><span class="kbd">A</span></span>
-        <span><span class="p-label" style="color:#ffbe0b">P2</span><span class="kbd">L</span></span>
-        <span><span class="p-label" style="color:#f72585">P3</span><span class="kbd">,</span></span>
-      </div>
-      <button id="start-btn">Start!</button>
-      <div id="timer" style="display:none">Time: 0.00 sec</div>
-      <div id="best-timer" style="display:none"></div>
+    <div class="game-container">
+        <div class="hud">
+            <div>
+                <div>Player 1 (WASD + F/G)</div>
+                <div class="health-bar">
+                    <div class="health-fill" id="health1" style="width: 100%"></div>
+                </div>
+            </div>
+            <div style="text-align: center; color: #FFD700; font-size: 20px;">
+                ARNIS MASTERS
+            </div>
+            <div>
+                <div>Player 2 (Arrow Keys + N/M)</div>
+                <div class="health-bar">
+                    <div class="health-fill" id="health2" style="width: 100%"></div>
+                </div>
+            </div>
+        </div>
+        
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+        
+        <div class="controls">
+            <strong>Player 1:</strong> WASD to move, F = Strike, G = Block | 
+            <strong>Player 2:</strong> Arrow Keys to move, N = Strike, M = Block
+        </div>
+        
+        <div class="game-over" id="gameOver">
+            <div id="winner"></div>
+            <button onclick="restartGame()">Play Again</button>
+        </div>
     </div>
-    <div id="track-area"></div>
-    <div id="runner-area"></div>
-    <div class="run-controls" id="run-controls" style="display:none"></div>
-    <div id="countdown"></div>
-    <div id="winner-msg"></div>
-    <div id="credit">by Pinoy Games JS</div>
-  </div>
-  <script>
-    // --- CONFIG ---
-    const runnerColors = [
-      { body: "#4361ee", accent: "#3a0ca3" }, // P1 blue
-      { body: "#ffbe0b", accent: "#fb8500" }, // P2 yellow
-      { body: "#f72585", accent: "#b5179e" }, // P3 pink
-    ];
-    const runnerNames = ["P1", "P2", "P3"];
-    const runnerKeys = ["KeyA", "KeyL", "Comma"];
-    const runnerKeyLabels = ["A", "L", ","];
-    // --- DOM ELEMENTS ---
-    const playerBtns = [...document.querySelectorAll('.player-btn')];
-    const startBtn = document.getElementById('start-btn');
-    const uiPanel = document.getElementById('ui-panel');
-    const choosePlayersDiv = document.getElementById('choose-players');
-    const pControls = document.querySelector('.p-controls');
-    const timerDiv = document.getElementById('timer');
-    const bestDiv = document.getElementById('best-timer');
-    const trackArea = document.getElementById('track-area');
-    const runnerArea = document.getElementById('runner-area');
-    const runControls = document.getElementById('run-controls');
-    const winnerMsg = document.getElementById('winner-msg');
-    const countdownDiv = document.getElementById('countdown');
 
-    // --- GAME STATE ---
-    let numPlayers = 1;
-    let runners = [];
-    let tracks = [];
-    let finishLines = [];
-    let gameOn = false;
-    let winner = null;
-    let animationId = null;
-    let startTime = 0;
-    let singleBestTime = null;
-    let countdownActive = false;
-
-    // --- SETUP UI ---
-    playerBtns.forEach(btn => {
-      btn.onclick = () => {
-        playerBtns.forEach(b => b.classList.remove('selected'));
-        btn.classList.add('selected');
-        numPlayers = +btn.dataset.n;
-        updatePlayerControls();
-      };
-    });
-
-    function updatePlayerControls() {
-      // Show/hide control labels depending on players
-      let html = '';
-      for (let i = 0; i < numPlayers; ++i) {
-        html += `<span><span class="p-label" style="color:${runnerColors[i].body}">${runnerNames[i]}</span><span class="kbd">${runnerKeyLabels[i]}</span></span>`;
-      }
-      pControls.innerHTML = html;
-    }
-
-    // --- RUNNER SVG ---
-    function getRunnerSVG(idx) {
-      const { body, accent } = runnerColors[idx];
-      return `
-      <svg viewBox="0 0 54 58">
-        <g id="body-group">
-          <ellipse cx="28" cy="14" rx="12" ry="11" fill="#ffe066" stroke="#f9c74f" stroke-width="2"/>
-          <rect x="18" y="25" width="20" height="19" rx="10" fill="${body}" stroke="${accent}" stroke-width="2"/>
-          <rect class="leg-left" x="21" y="44" width="7" height="14" rx="4" fill="#ffb703"/>
-          <rect class="leg-right" x="30" y="44" width="7" height="14" rx="4" fill="#ffb703"/>
-          <rect class="arm-left" x="7" y="26" width="10" height="6" rx="3" fill="#f94144"/>
-          <rect class="arm-right" x="37" y="26" width="10" height="6" rx="3" fill="#f94144"/>
-        </g>
-      </svg>
-      `;
-    }
-
-    // --- SETUP TRACKS/RUNNERS ---
-    function setupTracksAndRunners() {
-      trackArea.innerHTML = '';
-      runnerArea.innerHTML = '';
-      finishLines = [];
-      tracks = [];
-      runners = [];
-      for (let i = 0; i < numPlayers; ++i) {
-        // Track
-        const track = document.createElement('div');
-        track.className = 'track';
-        track.style.bottom = `${i * 17}vh`;
-        track.style.height = '16vh';
-        trackArea.appendChild(track);
-        tracks.push(track);
-        // Finish line
-        const finish = document.createElement('div');
-        finish.className = 'finish-line';
-        finish.style.height = '16vh';
-        finish.style.bottom = `${i * 17}vh`;
-        trackArea.appendChild(finish);
-        finishLines.push(finish);
-        // Runner
-        const runner = document.createElement('div');
-        runner.className = `runner p${i+1}`;
-        runner.innerHTML = getRunnerSVG(i);
-        runner.style.left = '4vw';
-        runner.style.bottom = `calc(${i * 17}vh + 6px)`;
-        runnerArea.appendChild(runner);
-        runners.push({
-          el: runner,
-          pos: 0,
-          speed: 0,
-          legState: 0,
-          lastLegSwap: 0,
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        // Game state
+        let gameRunning = true;
+        const keys = {};
+        
+        // Fighter class
+        class Fighter {
+            constructor(x, y, controls, color, name) {
+                this.x = x;
+                this.y = y;
+                this.width = 40;
+                this.height = 60;
+                this.velocityX = 0;
+                this.velocityY = 0;
+                this.speed = 3;
+                this.jumpPower = 15;
+                this.onGround = false;
+                this.health = 100;
+                this.maxHealth = 100;
+                this.facing = 1; // 1 = right, -1 = left
+                this.color = color;
+                this.name = name;
+                
+                // Combat properties
+                this.isAttacking = false;
+                this.isBlocking = false;
+                this.attackCooldown = 0;
+                this.blockCooldown = 0;
+                this.attackRange = 80;
+                this.attackDamage = 15;
+                this.comboCount = 0;
+                this.comboTimer = 0;
+                
+                // Stick properties
+                this.stickAngle = 0;
+                this.stickLength = 50;
+                
+                // Animation
+                this.animationFrame = 0;
+                this.animationSpeed = 0.2;
+                
+                this.controls = controls;
+            }
+            
+            update() {
+                this.handleInput();
+                this.updatePhysics();
+                this.updateCombat();
+                this.updateAnimation();
+                this.constrainToCanvas();
+            }
+            
+            handleInput() {
+                if (!gameRunning) return;
+                
+                // Movement
+                this.velocityX = 0;
+                
+                if (keys[this.controls.left]) {
+                    this.velocityX = -this.speed;
+                    this.facing = -1;
+                }
+                if (keys[this.controls.right]) {
+                    this.velocityX = this.speed;
+                    this.facing = 1;
+                }
+                
+                // Jumping
+                if (keys[this.controls.up] && this.onGround) {
+                    this.velocityY = -this.jumpPower;
+                    this.onGround = false;
+                }
+                
+                // Attack
+                if (keys[this.controls.attack] && this.attackCooldown <= 0) {
+                    this.attack();
+                }
+                
+                // Block
+                this.isBlocking = keys[this.controls.block] && this.blockCooldown <= 0;
+            }
+            
+            updatePhysics() {
+                // Apply gravity
+                this.velocityY += 0.8;
+                
+                // Update position
+                this.x += this.velocityX;
+                this.y += this.velocityY;
+                
+                // Ground collision
+                const groundY = canvas.height - 80;
+                if (this.y + this.height >= groundY) {
+                    this.y = groundY - this.height;
+                    this.velocityY = 0;
+                    this.onGround = true;
+                }
+            }
+            
+            updateCombat() {
+                // Update cooldowns
+                if (this.attackCooldown > 0) this.attackCooldown--;
+                if (this.blockCooldown > 0) this.blockCooldown--;
+                
+                // Update combo timer
+                if (this.comboTimer > 0) {
+                    this.comboTimer--;
+                } else {
+                    this.comboCount = 0;
+                }
+                
+                // Reset attack state
+                if (this.attackCooldown <= 10) {
+                    this.isAttacking = false;
+                }
+            }
+            
+            updateAnimation() {
+                this.animationFrame += this.animationSpeed;
+                if (this.animationFrame >= 4) this.animationFrame = 0;
+                
+                // Update stick angle based on state
+                if (this.isAttacking) {
+                    this.stickAngle = Math.sin(this.attackCooldown * 0.5) * 0.8;
+                } else if (this.isBlocking) {
+                    this.stickAngle = -0.3 * this.facing;
+                } else {
+                    this.stickAngle = 0.1 * Math.sin(this.animationFrame);
+                }
+            }
+            
+            attack() {
+                this.isAttacking = true;
+                this.attackCooldown = 20;
+                this.comboCount++;
+                this.comboTimer = 60; // Combo window
+                
+                // Different attack patterns based on combo
+                let damage = this.attackDamage;
+                let knockback = 5;
+                
+                if (this.comboCount === 2) {
+                    damage *= 1.2;
+                    knockback *= 1.5;
+                } else if (this.comboCount >= 3) {
+                    damage *= 1.5;
+                    knockback *= 2;
+                    this.comboCount = 0; // Reset after special attack
+                }
+                
+                // Check for hit
+                const opponent = this.name === 'Player 1' ? fighter2 : fighter1;
+                const distance = Math.abs(this.x - opponent.x);
+                const yDistance = Math.abs(this.y - opponent.y);
+                
+                if (distance < this.attackRange && yDistance < 50) {
+                    this.hit(opponent, damage, knockback);
+                }
+            }
+            
+            hit(opponent, damage, knockback) {
+                if (opponent.isBlocking) {
+                    // Reduced damage when blocking
+                    damage *= 0.3;
+                    knockback *= 0.5;
+                    opponent.blockCooldown = 30; // Block fatigue
+                }
+                
+                // Apply damage
+                opponent.health -= damage;
+                opponent.health = Math.max(0, opponent.health);
+                
+                // Apply knockback
+                const direction = opponent.x > this.x ? 1 : -1;
+                opponent.velocityX = direction * knockback;
+                
+                // Check for game over
+                if (opponent.health <= 0 && gameRunning) {
+                    endGame(this.name + ' Wins!');
+                }
+                
+                // Update health bar
+                updateHealthBar();
+            }
+            
+            constrainToCanvas() {
+                if (this.x < 0) this.x = 0;
+                if (this.x + this.width > canvas.width) this.x = canvas.width - this.width;
+            }
+            
+            draw() {
+                ctx.save();
+                
+                // Draw shadow
+                ctx.fillStyle = 'rgba(0,0,0,0.3)';
+                ctx.fillRect(this.x + 5, canvas.height - 75, this.width, 10);
+                
+                // Draw fighter body
+                ctx.fillStyle = this.color;
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+                
+                // Draw head
+                ctx.fillStyle = '#FFDBAC';
+                ctx.beginPath();
+                ctx.arc(this.x + this.width/2, this.y + 15, 12, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw uniform details
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(this.x + 5, this.y + 25, this.width - 10, 3);
+                
+                // Draw arms
+                ctx.strokeStyle = '#FFDBAC';
+                ctx.lineWidth = 8;
+                ctx.beginPath();
+                
+                // Main arm holding stick
+                const armX = this.x + this.width/2;
+                const armY = this.y + 30;
+                const armEndX = armX + Math.cos(this.stickAngle) * 25 * this.facing;
+                const armEndY = armY + Math.sin(this.stickAngle) * 25;
+                
+                ctx.moveTo(armX, armY);
+                ctx.lineTo(armEndX, armEndY);
+                ctx.stroke();
+                
+                // Draw Arnis stick (rattan)
+                ctx.strokeStyle = this.isAttacking ? '#FF6B35' : '#8B4513';
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                
+                const stickEndX = armEndX + Math.cos(this.stickAngle) * this.stickLength * this.facing;
+                const stickEndY = armEndY + Math.sin(this.stickAngle) * this.stickLength;
+                
+                ctx.moveTo(armEndX, armEndY);
+                ctx.lineTo(stickEndX, stickEndY);
+                ctx.stroke();
+                
+                // Draw stick tip accent
+                ctx.fillStyle = '#654321';
+                ctx.beginPath();
+                ctx.arc(stickEndX, stickEndY, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Draw legs
+                ctx.strokeStyle = this.color;
+                ctx.lineWidth = 12;
+                ctx.beginPath();
+                ctx.moveTo(this.x + 10, this.y + this.height);
+                ctx.lineTo(this.x + 10, this.y + this.height + 15);
+                ctx.moveTo(this.x + this.width - 10, this.y + this.height);
+                ctx.lineTo(this.x + this.width - 10, this.y + this.height + 15);
+                ctx.stroke();
+                
+                // Draw blocking indicator
+                if (this.isBlocking) {
+                    ctx.strokeStyle = '#00BFFF';
+                    ctx.lineWidth = 3;
+                    ctx.setLineDash([5, 5]);
+                    ctx.strokeRect(this.x - 5, this.y - 5, this.width + 10, this.height + 10);
+                    ctx.setLineDash([]);
+                }
+                
+                // Draw combo indicator
+                if (this.comboCount > 1) {
+                    ctx.fillStyle = '#FFD700';
+                    ctx.font = '16px Arial';
+                    ctx.fillText(`${this.comboCount}x COMBO!`, this.x - 10, this.y - 20);
+                }
+                
+                // Draw name
+                ctx.fillStyle = 'white';
+                ctx.font = '12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(this.name, this.x + this.width/2, this.y - 10);
+                
+                ctx.restore();
+            }
+        }
+        
+        // Initialize fighters
+        const fighter1 = new Fighter(100, 200, {
+            left: 'KeyA',
+            right: 'KeyD',
+            up: 'KeyW',
+            down: 'KeyS',
+            attack: 'KeyF',
+            block: 'KeyG'
+        }, '#1E90FF', 'Player 1');
+        
+        const fighter2 = new Fighter(600, 200, {
+            left: 'ArrowLeft',
+            right: 'ArrowRight',
+            up: 'ArrowUp',
+            down: 'ArrowDown',
+            attack: 'KeyN',
+            block: 'KeyM'
+        }, '#DC143C', 'Player 2');
+        
+        // Input handling
+        window.addEventListener('keydown', (e) => {
+            keys[e.code] = true;
         });
-      }
-    }
-
-    // --- SETUP RUN BUTTONS ---
-    function setupRunButtons() {
-      runControls.innerHTML = '';
-      for (let i = 0; i < numPlayers; ++i) {
-        let btn = document.createElement('button');
-        btn.className = `run-btn p${i+1}`;
-        btn.id = `run-btn-p${i+1}`;
-        btn.textContent = `Run! (${runnerKeyLabels[i]})`;
-        btn.disabled = false;
-        btn.onclick = () => {
-          if (gameOn && !countdownActive) runAction(i);
-        };
-        runControls.appendChild(btn);
-      }
-      runControls.style.display = '';
-    }
-    function setRunButtonsDisabled(disabled) {
-      for (let i = 0; i < numPlayers; ++i) {
-        const btn = document.getElementById(`run-btn-p${i+1}`);
-        if (btn) btn.disabled = disabled;
-      }
-    }
-
-    // --- RUNNER ANIMATION ---
-    function animateRunnerLegs(runner) {
-      // Animate SVG legs and arms
-      const svg = runner.el.querySelector('svg');
-      const legL = svg.querySelector('.leg-left');
-      const legR = svg.querySelector('.leg-right');
-      const armL = svg.querySelector('.arm-left');
-      const armR = svg.querySelector('.arm-right');
-      if (runner.legState === 0) {
-        legL.setAttribute('y', 44);
-        legR.setAttribute('y', 49);
-        armL.setAttribute('x', 7);
-        armR.setAttribute('x', 37);
-        runner.legState = 1;
-      } else {
-        legL.setAttribute('y', 49);
-        legR.setAttribute('y', 44);
-        armL.setAttribute('x', 4);
-        armR.setAttribute('x', 40);
-        runner.legState = 0;
-      }
-    }
-
-    // --- GAME LOOP ---
-    function gameLoop() {
-      let finished = false;
-      for (let i = 0; i < numPlayers; ++i) {
-        let r = runners[i];
-        if (winner !== null) continue; // ignore after winner
-        r.speed *= 0.94;
-        if (r.speed < 0.22) r.speed = 0;
-        r.pos += r.speed;
-        if (performance.now() - r.lastLegSwap > 70 + Math.max(0, 100 - r.speed * 8)) {
-          animateRunnerLegs(r);
-          r.lastLegSwap = performance.now();
+        
+        window.addEventListener('keyup', (e) => {
+            keys[e.code] = false;
+        });
+        
+        // Game functions
+        function drawBackground() {
+            // Sky and ground already set by CSS gradient
+            
+            // Draw traditional Filipino elements
+            ctx.fillStyle = '#8B4513';
+            for (let i = 0; i < 5; i++) {
+                ctx.fillRect(i * 160 + 50, canvas.height - 80, 60, 80);
+            }
+            
+            // Draw bamboo poles in background
+            ctx.strokeStyle = '#228B22';
+            ctx.lineWidth = 8;
+            for (let i = 0; i < 6; i++) {
+                ctx.beginPath();
+                ctx.moveTo(i * 140 + 70, canvas.height - 200);
+                ctx.lineTo(i * 140 + 70, canvas.height - 80);
+                ctx.stroke();
+            }
+            
+            // Draw ground line
+            ctx.strokeStyle = '#654321';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height - 80);
+            ctx.lineTo(canvas.width, canvas.height - 80);
+            ctx.stroke();
         }
-        // Calculate finish line
-        const finishX = finishLines[i].getBoundingClientRect().left - runnerArea.getBoundingClientRect().left;
-        const maxTrack = finishX - runners[i].el.offsetWidth - 12;
-        let leftPx = Math.min(r.pos, maxTrack);
-        r.el.style.left = `calc(4vw + ${leftPx}px)`;
-        if (r.pos >= maxTrack && winner === null) {
-          winner = i;
-          finished = true;
+        
+        function updateHealthBar() {
+            document.getElementById('health1').style.width = (fighter1.health / fighter1.maxHealth * 100) + '%';
+            document.getElementById('health2').style.width = (fighter2.health / fighter2.maxHealth * 100) + '%';
         }
-      }
-      if (finished) finishRace();
-      else animationId = requestAnimationFrame(gameLoop);
-    }
-
-    // --- RUN ACTIONS ---
-    function runAction(idx) {
-      if (!gameOn || countdownActive) return;
-      let r = runners[idx];
-      r.speed += 3.1 + Math.random() * 1.3;
-      if (r.speed > 15) r.speed = 15;
-      r.el.style.transform = "scale(1.04,0.98)";
-      setTimeout(() => { r.el.style.transform = ""; }, 70);
-    }
-
-    // --- START GAME WITH COUNTDOWN ---
-    function startGameWithCountdown() {
-      setupTracksAndRunners();
-      setupRunButtons();
-      setRunButtonsDisabled(true);
-      document.body.style.background = "linear-gradient(to bottom, #caf0f8 0%, #0096c7 100%)";
-      winnerMsg.style.display = "none";
-      winner = null;
-      for (let r of runners) { r.pos = 0; r.speed = 0; r.legState = 0; r.lastLegSwap = 0;}
-      gameOn = false;
-      timerDiv.style.display = '';
-      timerDiv.textContent = "Time: 0.00 sec";
-      if (numPlayers === 1 && singleBestTime) {
-        bestDiv.style.display = '';
-        bestDiv.innerHTML = `<b>Best:</b> <span style="color:#457b9d">${singleBestTime} sec</span>`;
-      } else {
-        bestDiv.style.display = 'none';
-      }
-      runControls.style.pointerEvents = "none";
-      uiPanel.style.pointerEvents = "none";
-      countdownActive = true;
-      doCountdown(3, () => {
-        gameOn = true;
-        countdownActive = false;
-        setRunButtonsDisabled(false);
-        runControls.style.pointerEvents = "";
-        uiPanel.style.pointerEvents = "none";
-        startTime = performance.now();
-        animationId = requestAnimationFrame(updateTimer);
-        animationId = requestAnimationFrame(gameLoop);
-      });
-    }
-
-    // --- COUNTDOWN ---
-    function doCountdown(num, callback) {
-      countdownDiv.style.display = '';
-      function show(n) {
-        if(n > 0){
-          countdownDiv.textContent = n;
-          countdownDiv.style.animation = "countdownPop 0.4s";
-          setTimeout(()=>show(n-1), 900);
-        } else {
-          countdownDiv.textContent = "GO!";
-          countdownDiv.style.animation = "countdownPop 0.4s";
-          setTimeout(()=>{
-            countdownDiv.style.display = 'none';
-            callback();
-          }, 700);
+        
+        function endGame(winner) {
+            gameRunning = false;
+            document.getElementById('winner').textContent = winner;
+            document.getElementById('gameOver').style.display = 'block';
         }
-      }
-      show(num);
-    }
-
-    // --- TIMER ---
-    function updateTimer() {
-      if (!gameOn) return;
-      const t = ((performance.now() - startTime) / 1000).toFixed(2);
-      timerDiv.textContent = "Time: " + t + " sec";
-      animationId = requestAnimationFrame(updateTimer);
-    }
-
-    // --- FINISH ---
-    function finishRace() {
-      gameOn = false;
-      setRunButtonsDisabled(true);
-      cancelAnimationFrame(animationId);
-      timerDiv.textContent = "Time: " + ((performance.now() - startTime) / 1000).toFixed(2) + " sec";
-      runControls.style.pointerEvents = "none";
-      let msg = '';
-      if (numPlayers === 1) {
-        let t = ((performance.now() - startTime) / 1000).toFixed(2);
-        msg = `<b>🏁 Finished!</b><br>Your time: <span style="color:#e63946">${t} sec</span>`;
-        if (!singleBestTime || t < singleBestTime) {
-          singleBestTime = t;
-          msg += `<br><b>🎉 NEW BEST!</b>`;
-        } else {
-          msg += `<br>Best: <span style="color:#457b9d">${singleBestTime} sec</span>`;
+        
+        function restartGame() {
+            gameRunning = true;
+            fighter1.health = fighter1.maxHealth;
+            fighter2.health = fighter2.maxHealth;
+            fighter1.x = 100;
+            fighter2.x = 600;
+            fighter1.y = 200;
+            fighter2.y = 200;
+            fighter1.velocityX = 0;
+            fighter1.velocityY = 0;
+            fighter2.velocityX = 0;
+            fighter2.velocityY = 0;
+            updateHealthBar();
+            document.getElementById('gameOver').style.display = 'none';
         }
-      } else {
-        msg = `<b>🏅 Winner: <span style="color:${runnerColors[winner].body}">${runnerNames[winner]}</span>!</b>`;
-      }
-      msg += `<br><button id="restart-btn">Restart Game</button>`;
-      winnerMsg.innerHTML = msg;
-      winnerMsg.style.display = "";
-      setTimeout(() => {
-        const restartBtn = document.getElementById('restart-btn');
-        if (restartBtn) restartBtn.onclick = restartGame;
-      }, 10);
-    }
-
-    function restartGame() {
-      winnerMsg.style.display = "none";
-      uiPanel.style.pointerEvents = "";
-      runControls.style.pointerEvents = "";
-      startGameWithCountdown();
-    }
-
-    // --- KEYBOARD CONTROLS ---
-    window.addEventListener('keydown', function(e) {
-      if (!gameOn || countdownActive) return;
-      for (let i = 0; i < numPlayers; ++i) {
-        if (e.code === runnerKeys[i]) {
-          e.preventDefault();
-          runAction(i);
+        
+        // Game loop
+        function gameLoop() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Draw background
+            drawBackground();
+            
+            if (gameRunning) {
+                // Update fighters
+                fighter1.update();
+                fighter2.update();
+            }
+            
+            // Draw fighters
+            fighter1.draw();
+            fighter2.draw();
+            
+            requestAnimationFrame(gameLoop);
         }
-      }
-    });
-
-    // --- TOUCH: Tap or multi-tap on run buttons
-    runControls.addEventListener('touchstart', function(e) {
-      if (!gameOn || countdownActive) return;
-      let idx = Array.from(runControls.children).indexOf(e.target);
-      if (idx >= 0 && idx < numPlayers) {
-        runAction(idx);
-      }
-    }, {passive:false});
-
-    // --- START BUTTON ---
-    startBtn.onclick = () => {
-      uiPanel.style.pointerEvents = "none";
-      runControls.style.pointerEvents = "";
-      timerDiv.style.display = 'none';
-      bestDiv.style.display = 'none';
-      startGameWithCountdown();
-    };
-
-    // --- INITIALIZE ---
-    updatePlayerControls();
-    setupTracksAndRunners();
-    setupRunButtons();
-    timerDiv.style.display = 'none';
-    bestDiv.style.display = 'none';
-
-    // Resize handler
-    window.addEventListener('resize', () => {
-      if (!gameOn) {
-        setupTracksAndRunners();
-      }
-    });
-  </script>
+        
+        // Start game
+        updateHealthBar();
+        gameLoop();
+        
+        // Prevent context menu on right click
+        canvas.addEventListener('contextmenu', e => e.preventDefault());
+    </script>
 </body>
 </html>
